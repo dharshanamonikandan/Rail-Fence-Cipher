@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Rail Fence Cipher</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Courier New', Courier, monospace;
+      background: #0f0f0f;
+      color: #e0e0e0;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 2rem 1rem;
+    }
+
+    .app {
+      width: 100%;
+      max-width: 680px;
+    }
+
+    .header {
+      margin-bottom: 2rem;
+      border-left: 3px solid #7F77DD;
+      padding-left: 1rem;
+    }
+
+    .header h1 {
+      font-size: 22px;
+      font-weight: 500;
+      color: #ffffff;
+      letter-spacing: -0.5px;
+    }
+
+    .header p {
+      font-size: 13px;
+      color: #888;
+      margin-top: 4px;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 0;
+      border: 1px solid #2a2a2a;
+      border-radius: 8px;
+      overflow: hidden;
+      margin-bottom: 1.25rem;
+      width: fit-content;
+    }
+
+    .tab {
+      padding: 8px 24px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      background: transparent;
+      border: none;
+      color: #666;
+      font-family: 'Courier New', monospace;
+      transition: all 0.15s;
+    }
+
+    .tab.active {
+      background: #1e1e1e;
+      color: #ffffff;
+    }
+
+    .tab:hover:not(.active) { color: #ccc; }
+
+    .card {
+      background: #141414;
+      border: 1px solid #222;
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .field { margin-bottom: 1.1rem; }
+
+    .field label {
+      display: block;
+      font-size: 11px;
+      color: #666;
+      margin-bottom: 6px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .field textarea,
+    .field input[type=number] {
+      background: #0f0f0f;
+      border: 1px solid #2a2a2a;
+      border-radius: 8px;
+      color: #e0e0e0;
+      font-family: 'Courier New', monospace;
+      font-size: 14px;
+      padding: 10px 12px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .field textarea {
+      width: 100%;
+      resize: vertical;
+      min-height: 80px;
+    }
+
+    .field input[type=number] { width: 90px; }
+
+    .field textarea:focus,
+    .field input[type=number]:focus {
+      border-color: #7F77DD;
+    }
+
+    .rail-hint { font-size: 11px; color: #555; margin-top: 5px; }
+
+    .btn-run {
+      padding: 9px 24px;
+      font-size: 13px;
+      font-weight: 500;
+      font-family: 'Courier New', monospace;
+      cursor: pointer;
+      background: #7F77DD;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+
+    .btn-run:hover { opacity: 0.85; }
+    .btn-run:active { transform: scale(0.97); }
+
+    .error {
+      font-size: 12px;
+      color: #E24B4A;
+      margin-top: 8px;
+    }
+
+    .divider {
+      border: none;
+      border-top: 1px solid #222;
+      margin: 1.25rem 0;
+    }
+
+    .result-label {
+      font-size: 11px;
+      color: #666;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+
+    .result-text {
+      font-family: 'Courier New', monospace;
+      font-size: 15px;
+      font-weight: 500;
+      color: #ffffff;
+      background: #0f0f0f;
+      border: 1px solid #2a2a2a;
+      border-radius: 8px;
+      padding: 10px 14px;
+      word-break: break-all;
+      min-height: 42px;
+    }
+
+    .copy-btn {
+      margin-top: 6px;
+      padding: 5px 14px;
+      font-size: 12px;
+      cursor: pointer;
+      background: transparent;
+      border: 1px solid #2a2a2a;
+      border-radius: 6px;
+      color: #888;
+      font-family: 'Courier New', monospace;
+      transition: all 0.15s;
+    }
+
+    .copy-btn:hover { background: #1e1e1e; color: #fff; }
+
+    .viz-section { margin-top: 0.5rem; }
+
+    .viz-label {
+      font-size: 11px;
+      color: #666;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+
+    .viz-grid { overflow-x: auto; }
+
+    .viz-table { border-collapse: collapse; font-family: 'Courier New', monospace; font-size: 13px; }
+
+    .viz-table td { width: 22px; height: 22px; text-align: center; }
+
+    .viz-char {
+      border-radius: 3px;
+      font-weight: 600;
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      line-height: 20px;
+      text-align: center;
+    }
+
+    .viz-dot { color: #333; }
+
+    .rail-colors { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+
+    .rail-badge {
+      font-size: 11px;
+      padding: 2px 9px;
+      border-radius: 10px;
+      font-family: 'Courier New', monospace;
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <h1>Rail Fence Cipher</h1>
+    <p>A transposition cipher — Network Security Assignment</p>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" id="tab-enc" onclick="switchTab('enc')">Encrypt</button>
+    <button class="tab" id="tab-dec" onclick="switchTab('dec')">Decrypt</button>
+  </div>
+
+  <!-- ENCRYPT PANEL -->
+  <div class="card" id="panel-enc">
+    <div class="field">
+      <label>Plaintext</label>
+      <textarea id="enc-input" placeholder="Enter text to encrypt (no spaces)..." oninput="clearResult('enc')"></textarea>
+    </div>
+    <div class="field">
+      <label>Number of rails</label>
+      <input type="number" id="enc-rails" value="3" min="2" max="50" />
+      <div class="rail-hint" id="enc-hint">Must be ≥ 2 and less than text length</div>
+    </div>
+    <button class="btn-run" onclick="runEncrypt()">Encrypt</button>
+    <div id="enc-error" class="error"></div>
+
+    <div id="enc-result" style="display:none">
+      <hr class="divider">
+      <div class="result-label">Ciphertext</div>
+      <div class="result-text" id="enc-output"></div>
+      <button class="copy-btn" onclick="copyText('enc-output', this)">Copy</button>
+
+      <div class="viz-section">
+        <hr class="divider">
+        <div class="viz-label">Zigzag pattern</div>
+        <div class="viz-grid" id="enc-viz-grid"></div>
+        <div class="rail-colors" id="enc-rail-legend"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DECRYPT PANEL -->
+  <div class="card" id="panel-dec" style="display:none">
+    <div class="field">
+      <label>Ciphertext</label>
+      <textarea id="dec-input" placeholder="Enter ciphertext to decrypt (no spaces)..." oninput="clearResult('dec')"></textarea>
+    </div>
+    <div class="field">
+      <label>Number of rails</label>
+      <input type="number" id="dec-rails" value="3" min="2" max="50" />
+      <div class="rail-hint">Must match the rails used during encryption</div>
+    </div>
+    <button class="btn-run" onclick="runDecrypt()">Decrypt</button>
+    <div id="dec-error" class="error"></div>
+
+    <div id="dec-result" style="display:none">
+      <hr class="divider">
+      <div class="result-label">Plaintext</div>
+      <div class="result-text" id="dec-output"></div>
+      <button class="copy-btn" onclick="copyText('dec-output', this)">Copy</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const RAIL_COLORS = ['#7F77DD','#1D9E75','#D85A30','#378ADD','#BA7517','#D4537E','#639922'];
+  const RAIL_BG    = ['#26215C','#085041','#4A1B0C','#042C53','#412402','#4B1528','#173404'];
+
+  function switchTab(t) {
+    document.getElementById('tab-enc').classList.toggle('active', t === 'enc');
+    document.getElementById('tab-dec').classList.toggle('active', t === 'dec');
+    document.getElementById('panel-enc').style.display = t === 'enc' ? '' : 'none';
+    document.getElementById('panel-dec').style.display = t === 'dec' ? '' : 'none';
+  }
+
+  function clearResult(mode) {
+    document.getElementById(mode + '-result').style.display = 'none';
+    document.getElementById(mode + '-error').textContent = '';
+  }
+
+  // ── Encryption ──────────────────────────────────
+  function encrypt(text, rails) {
+    const n = text.length;
+    const grid = Array.from({ length: rails }, () => Array(n).fill(''));
+    let row = 0, dir = 1;
+    for (let i = 0; i < n; i++) {
+      grid[row][i] = text[i];
+      if (row === 0) dir = 1;
+      else if (row === rails - 1) dir = -1;
+      row += dir;
+    }
+    return grid.map(r => r.filter(c => c !== '').join('')).join('');
+  }
+
+  // ── Decryption ──────────────────────────────────
+  function decrypt(cipher, rails) {
+    const n = cipher.length;
+    const grid = Array.from({ length: rails }, () => Array(n).fill(''));
+    let row = 0, dir = 1;
+    for (let i = 0; i < n; i++) {
+      grid[row][i] = '*';
+      if (row === 0) dir = 1;
+      else if (row === rails - 1) dir = -1;
+      row += dir;
+    }
+    let idx = 0;
+    for (let r = 0; r < rails; r++)
+      for (let c = 0; c < n; c++)
+        if (grid[r][c] === '*') grid[r][c] = cipher[idx++];
+    const plain = [];
+    row = 0; dir = 1;
+    for (let i = 0; i < n; i++) {
+      plain.push(grid[row][i]);
+      if (row === 0) dir = 1;
+      else if (row === rails - 1) dir = -1;
+      row += dir;
+    }
+    return plain.join('');
+  }
+
+  // ── Zigzag visualizer ───────────────────────────
+  function buildViz(text, rails) {
+    const n = text.length;
+    const positions = [];
+    let row = 0, dir = 1;
+    for (let i = 0; i < n; i++) {
+      positions.push(row);
+      if (row === 0) dir = 1;
+      else if (row === rails - 1) dir = -1;
+      row += dir;
+    }
+    const maxShow = 50;
+    const showN = Math.min(n, maxShow);
+    let html = '<table class="viz-table"><tbody>';
+    for (let r = 0; r < rails; r++) {
+      const fg = RAIL_COLORS[r % RAIL_COLORS.length];
+      const bg = RAIL_BG[r % RAIL_BG.length];
+      html += '<tr>';
+      for (let i = 0; i < showN; i++) {
+        if (positions[i] === r) {
+          html += `<td><span class="viz-char" style="background:${bg};color:${fg}">${text[i]}</span></td>`;
+        } else {
+          html += `<td><span class="viz-dot">·</span></td>`;
+        }
+      }
+      if (n > maxShow) {
+        html += `<td style="font-size:11px;color:#555;padding-left:6px">+${n - maxShow}</td>`;
+      }
+      html += '</tr>';
+    }
+    html += '</tbody></table>';
+    return html;
+  }
+
+  function buildLegend(rails) {
+    let html = '';
+    for (let r = 0; r < rails; r++) {
+      const fg = RAIL_COLORS[r % RAIL_COLORS.length];
+      const bg = RAIL_BG[r % RAIL_BG.length];
+      html += `<span class="rail-badge" style="background:${bg};color:${fg}">rail ${r + 1}</span>`;
+    }
+    return html;
+  }
+
+  // ── Run encrypt ─────────────────────────────────
+  function runEncrypt() {
+    const text  = document.getElementById('enc-input').value.trim();
+    const rails = parseInt(document.getElementById('enc-rails').value);
+    const errEl = document.getElementById('enc-error');
+    errEl.textContent = '';
+    if (!text)                        { errEl.textContent = '[!] Plaintext cannot be empty.'; return; }
+    if (isNaN(rails) || rails < 2)    { errEl.textContent = '[!] Rails must be >= 2.'; return; }
+    if (rails >= text.length)         { errEl.textContent = `[!] Rails must be less than text length (${text.length}).`; return; }
+    const cipher = encrypt(text, rails);
+    document.getElementById('enc-output').textContent   = cipher;
+    document.getElementById('enc-viz-grid').innerHTML   = buildViz(text, rails);
+    document.getElementById('enc-rail-legend').innerHTML = buildLegend(rails);
+    document.getElementById('enc-result').style.display = '';
+  }
+
+  // ── Run decrypt ─────────────────────────────────
+  function runDecrypt() {
+    const text  = document.getElementById('dec-input').value.trim();
+    const rails = parseInt(document.getElementById('dec-rails').value);
+    const errEl = document.getElementById('dec-error');
+    errEl.textContent = '';
+    if (!text)                        { errEl.textContent = '[!] Ciphertext cannot be empty.'; return; }
+    if (isNaN(rails) || rails < 2)    { errEl.textContent = '[!] Rails must be >= 2.'; return; }
+    if (rails >= text.length)         { errEl.textContent = `[!] Rails must be less than text length (${text.length}).`; return; }
+    const plain = decrypt(text, rails);
+    document.getElementById('dec-output').textContent   = plain;
+    document.getElementById('dec-result').style.display = '';
+  }
+
+  // ── Copy to clipboard ───────────────────────────
+  function copyText(id, btn) {
+    const txt = document.getElementById(id).textContent;
+    navigator.clipboard.writeText(txt).then(() => {
+      const orig = btn.textContent;
+      btn.textContent = 'Copied!';
+      setTimeout(() => { btn.textContent = orig; }, 1500);
+    }).catch(() => {});
+  }
+</script>
+</body>
+</html>
